@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Super Windows Pro - Ultimate System Monitor</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/luxon@3.3.0"></script>
+</head>
+<body>
+    <div class="container">
+        <!-- Заголовок -->
+        <header class="header">
+            <h1><i class="fas fa-gem"></i> SUPER WINDOWS PRO</h1>
+            <div class="version">ULTIMATE EDITION v1.5.0</div>
+            <div class="creator">CREATED BY MOFARK-X и X-Rats</div>
+            <div class="system-time" id="currentTime"></div>
+        </header>
+
+        <!-- Быстрые метрики -->
+        <div class="quick-stats" id="quickStats">
+            <div class="stat-card cpu">
+                <h3><i class="fas fa-microchip"></i> ЦЕНТРАЛЬНЫЙ ПРОЦЕССОР</h3>
+                <div class="stat-value" id="cpuValue">0%</div>
+                <div class="stat-details">
+                    <span id="cpuCores">Ядра: 0</span>
+                    <span id="cpuTemp">Температура: --°C</span>
+                </div>
+            </div>
+            
+            <div class="stat-card memory">
+                <h3><i class="fas fa-memory"></i> ОПЕРАТИВНАЯ ПАМЯТЬ</h3>
+                <div class="stat-value" id="memoryValue">0%</div>
+                <div class="stat-details">
+                    <span id="memoryUsed">Использовано: 0 GB</span>
+                    <span id="memoryTotal">Всего: 0 GB</span>
+                </div>
+            </div>
+            
+            <div class="stat-card gpu">
+                <h3><i class="fas fa-gamepad"></i> ГРАФИЧЕСКИЙ ПРОЦЕССОР</h3>
+                <div class="stat-value" id="gpuValue">0%</div>
+                <div class="stat-details">
+                    <span id="gpuName">NVIDIA/AMD</span>
+                    <span id="gpuMemory">Память: 0 MB</span>
+                </div>
+            </div>
+            
+            <div class="stat-card processes">
+                <h3><i class="fas fa-tasks"></i> АКТИВНЫЕ ПРОЦЕССЫ</h3>
+                <div class="stat-value" id="processValue">0</div>
+                <div class="stat-details">
+                    <span>Загрузка системы</span>
+                    <span id="uptime">Время работы: 0ч</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Навигация -->
+        <nav class="nav-tabs">
+            <button class="nav-tab active" data-tab="processes">
+                <i class="fas fa-list"></i> Процессы
+                <span class="badge" id="processCount">0</span>
+            </button>
+            <button class="nav-tab" data-tab="startup">
+                <i class="fas fa-rocket"></i> Автозагрузка
+                <span class="badge" id="startupCount">0</span>
+            </button>
+            <button class="nav-tab" data-tab="performance">
+                <i class="fas fa-chart-line"></i> Производительность
+            </button>
+            <button class="nav-tab" data-tab="hardware">
+                <i class="fas fa-microchip"></i> Оборудование
+            </button>
+            <button class="nav-tab" data-tab="network">
+                <i class="fas fa-network-wired"></i> Сеть
+            </button>
+            <button class="nav-tab" data-tab="system">
+                <i class="fas fa-cog"></i> Система
+            </button>
+        </nav>
+
+        <!-- Содержимое вкладок -->
+        <div class="tab-content">
+            <!-- Процессы -->
+            <div id="processes" class="tab-pane active">
+                <div class="control-panel">
+                    <h2><i class="fas fa-list-ul"></i> Управление процессами</h2>
+                    <div class="controls">
+                        <div class="search-box">
+                            <input type="text" id="processSearch" placeholder="Поиск процесса по имени или PID...">
+                            <i class="fas fa-search"></i>
+                        </div>
+                        <button class="btn btn-primary" id="refreshProcesses">
+                            <i class="fas fa-sync-alt"></i> Обновить
+                        </button>
+                        <button class="btn btn-danger" id="killSelected">
+                            <i class="fas fa-skull-crossbones"></i> Завершить выбранные
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="table-container">
+                    <table class="data-table" id="processesTable">
+                        <thead>
+                            <tr>
+                                <th><input type="checkbox" id="selectAll"></th>
+                                <th class="sortable" data-sort="pid">PID</th>
+                                <th class="sortable" data-sort="name">Имя процесса</th>
+                                <th class="sortable" data-sort="cpu">CPU</th>
+                                <th class="sortable" data-sort="memory">Память</th>
+                                <th>Пользователь</th>
+                                <th class="sortable" data-sort="status">Статус</th>
+                                <th>Опасность</th>
+                                <th>Действия</th>
+                            </tr>
+                        </thead>
+                        <tbody id="processesList">
+                            <!-- Заполняется через JS -->
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="table-footer" style="margin-top: 20px; display: flex; justify-content: space-between; align-items: center;">
+                    <div class="table-info" id="processInfo">
+                        Показано 0 из 0 процессов
+                    </div>
+                    <div class="table-pagination">
+                        <button class="btn btn-outline btn-sm" id="prevPage" disabled>
+                            <i class="fas fa-chevron-left"></i>
+                        </button>
+                        <span style="margin: 0 10px;" id="currentPage">1</span>
+                        <button class="btn btn-outline btn-sm" id="nextPage" disabled>
+                            <i class="fas fa-chevron-right"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Автозагрузка -->
+            <div id="startup" class="tab-pane">
+                <div class="control-panel">
+                    <h2><i class="fas fa-rocket"></i> Управление автозагрузкой</h2>
+                    <div class="controls">
+                        <button class="btn btn-primary" id="refreshStartup">
+                            <i class="fas fa-sync-alt"></i> Обновить
+                        </button>
+                        <button class="btn btn-danger" id="disableSelectedStartup">
+                            <i class="fas fa-ban"></i> Отключить выбранные
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="table-container">
+                    <table class="data-table" id="startupTable">
+                        <thead>
+                            <tr>
+                                <th><input type="checkbox" id="selectAllStartup"></th>
+                                <th>Имя программы</th>
+                                <th>Путь/Команда</th>
+                                <th>Раздел реестра</th>
+                                <th>Тип</th>
+                                <th>Статус</th>
+                                <th>Действия</th>
+                            </tr>
+                        </thead>
+                        <tbody id="startupList">
+                            <!-- Заполняется через JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Производительность -->
+            <div id="performance" class="tab-pane">
+                <div class="control-panel">
+                    <h2><i class="fas fa-chart-line"></i> Мониторинг производительности</h2>
+                    <div class="controls">
+                        <button class="btn btn-primary" id="refreshCharts">
+                            <i class="fas fa-sync-alt"></i> Обновить графики
+                        </button>
+                        <div class="time-range">
+                            <button class="btn btn-outline btn-sm active" data-range="5m">5 мин</button>
+                            <button class="btn btn-outline btn-sm" data-range="15m">15 мин</button>
+                            <button class="btn btn-outline btn-sm" data-range="1h">1 час</button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="charts-grid">
+                    <div class="chart-container">
+                        <h3><i class="fas fa-microchip"></i> Загрузка процессора</h3>
+                        <canvas id="cpuChart"></canvas>
+                    </div>
+                    
+                    <div class="chart-container">
+                        <h3><i class="fas fa-memory"></i> Использование памяти</h3>
+                        <canvas id="memoryChart"></canvas>
+                    </div>
+                    
+                    <div class="chart-container">
+                        <h3><i class="fas fa-gamepad"></i> Загрузка видеокарты</h3>
+                        <canvas id="gpuChart"></canvas>
+                    </div>
+                    
+                    <div class="chart-container">
+                        <h3><i class="fas fa-exchange-alt"></i> Сетевая активность</h3>
+                        <canvas id="networkChart"></canvas>
+                    </div>
+                    
+                    <div class="chart-container">
+                        <h3><i class="fas fa-hdd"></i> Активность дисков</h3>
+                        <canvas id="diskChart"></canvas>
+                    </div>
+                    
+                    <div class="chart-container">
+                        <h3><i class="fas fa-bolt"></i> Температуры</h3>
+                        <canvas id="tempChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Оборудование -->
+            <div id="hardware" class="tab-pane">
+                <div class="control-panel">
+                    <h2><i class="fas fa-microchip"></i> Детальная информация об оборудовании</h2>
+                    <button class="btn btn-primary" id="refreshHardware">
+                        <i class="fas fa-sync-alt"></i> Обновить
+                    </button>
+                </div>
+                
+                <div class="info-cards" id="hardwareInfo">
+                    <!-- Заполняется через JS -->
+                </div>
+            </div>
+
+            <!-- Сеть -->
+            <div id="network" class="tab-pane">
+                <div class="control-panel">
+                    <h2><i class="fas fa-network-wired"></i> Сетевая информация</h2>
+                    <div class="controls">
+                        <button class="btn btn-primary" id="refreshNetwork">
+                            <i class="fas fa-sync-alt"></i> Обновить
+                        </button>
+                        <button class="btn btn-success" id="testConnection">
+                            <i class="fas fa-wifi"></i> Проверить соединение
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="network-cards">
+                    <div class="info-card">
+                        <h3><i class="fas fa-globe"></i> Публичная информация</h3>
+                        <div class="info-item">
+                            <span class="info-label">Публичный IP:</span>
+                            <span class="info-value" id="publicIp">Загрузка...</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Провайдер:</span>
+                            <span class="info-value" id="isp">Неизвестно</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Город:</span>
+                            <span class="info-value" id="city">Неизвестно</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Страна:</span>
+                            <span class="info-value" id="country">Неизвестно</span>
+                        </div>
+                    </div>
+                    
+                    <div class="info-card">
+                        <h3><i class="fas fa-server"></i> Локальная сеть</h3>
+                        <div class="info-item">
+                            <span class="info-label">Локальный IP:</span>
+                            <span class="info-value" id="localIp">192.168.x.x</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">MAC адрес:</span>
+                            <span class="info-value" id="macAddress">00:00:00:00:00:00</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Шлюз по умолчанию:</span>
+                            <span class="info-value" id="gateway">192.168.1.1</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">DNS серверы:</span>
+                            <span class="info-value" id="dnsServers">8.8.8.8, 8.8.4.4</span>
+                        </div>
+                    </div>
+                    
+                    <div class="info-card">
+                        <h3><i class="fas fa-plug"></i> Активные соединения</h3>
+                        <div id="activeConnections">
+                            <!-- Заполняется через JS -->
+                        </div>
+                    </div>
+                    
+                    <div class="info-card">
+                        <h3><i class="fas fa-network-wired"></i> Сетевые интерфейсы</h3>
+                        <div id="networkInterfaces">
+                            <!-- Заполняется через JS -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Система -->
+            <div id="system" class="tab-pane">
+                <div class="control-panel">
+                    <h2><i class="fas fa-cog"></i> Управление системой</h2>
+                    <div class="controls">
+                        <button class="btn btn-warning" id="restartSystem">
+                            <i class="fas fa-redo"></i> Перезагрузить
+                        </button>
+                        <button class="btn btn-danger" id="shutdownSystem">
+                            <i class="fas fa-power-off"></i> Выключить
+                        </button>
+                        <button class="btn btn-success" id="cleanTemp">
+                            <i class="fas fa-broom"></i> Очистить Temp
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="info-cards">
+                    <div class="info-card">
+                        <h3><i class="fas fa-info-circle"></i> Информация о системе</h3>
+                        <div id="systemDetails">
+                            <!-- Заполняется через JS -->
+                        </div>
+                    </div>
+                    
+                    <div class="info-card">
+                        <h3><i class="fas fa-shield-alt"></i> Безопасность</h3>
+                        <div class="info-item">
+                            <span class="info-label">Защитник Windows:</span>
+                            <span class="info-value" id="defenderStatus">Проверка...</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Брандмауэр:</span>
+                            <span class="info-value" id="firewallStatus">Проверка...</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Обновления:</span>
+                            <span class="info-value" id="updatesStatus">Проверка...</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Антивирус:</span>
+                            <span class="info-value" id="antivirusStatus">Проверка...</span>
+                        </div>
+                    </div>
+                    
+                    <div class="info-card">
+                        <h3><i class="fas fa-tachometer-alt"></i> Производительность системы</h3>
+                        <div class="info-item">
+                            <span class="info-label">Индекс производительности:</span>
+                            <span class="info-value" id="performanceIndex">Загрузка...</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Время загрузки:</span>
+                            <span class="info-value" id="bootTime">-- сек</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Системные сбои:</span>
+                            <span class="info-value" id="systemCrashes">0</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Время безотказной работы:</span>
+                            <span class="info-value" id="systemUptime">0 дней</span>
+                        </div>
+                    </div>
+                    
+                    <div class="info-card">
+                        <h3><i class="fas fa-tools"></i> Системные утилиты</h3>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                            <button class="btn btn-outline" id="openCmd">
+                                <i class="fas fa-terminal"></i> Командная строка
+                            </button>
+                            <button class="btn btn-outline" id="openPowershell">
+                                <i class="fas fa-terminal"></i> PowerShell
+                            </button>
+                            <button class="btn btn-outline" id="openRegistry">
+                                <i class="fas fa-database"></i> Реестр
+                            </button>
+                            <button class="btn btn-outline" id="openServices">
+                                <i class="fas fa-cogs"></i> Службы
+                            </button>
+                            <button class="btn btn-outline" id="openTaskManager">
+                                <i class="fas fa-tasks"></i> Диспетчер задач
+                            </button>
+                            <button class="btn btn-outline" id="openDiskManagement">
+                                <i class="fas fa-hdd"></i> Управление дисками
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Статус бар -->
+        <footer class="status-bar">
+            <div class="status-item">
+                <i class="fas fa-circle status-online"></i>
+                <span id="serverStatus">Сервер активен</span>
+            </div>
+            <div class="status-item">
+                <i class="fas fa-clock"></i>
+                <span id="lastUpdate">Последнее обновление: --:--:--</span>
+            </div>
+            <div class="status-item">
+                <i class="fas fa-shield-alt"></i>
+                <span id="adminStatus">Права администратора: Проверка...</span>
+            </div>
+            <div class="status-item">
+                <i class="fas fa-database"></i>
+                <span>Память сервера: <span id="serverMemory">0 MB</span></span>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Модальные окна -->
+    <div class="modal" id="processDetailsModal">
+        <div class="modal-content">
+            <button class="close-modal">&times;</button>
+            <div class="modal-header">
+                <h2><i class="fas fa-info-circle"></i> Детали процесса</h2>
+            </div>
+            <div class="modal-body" id="processDetailsContent">
+                <!-- Заполняется через JS -->
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" id="closeDetails">Закрыть</button>
+                <button class="btn btn-danger" id="killFromDetails">Завершить процесс</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="confirmModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-exclamation-triangle"></i> Подтверждение</h2>
+            </div>
+            <div class="modal-body" id="confirmMessage">
+                Вы уверены, что хотите выполнить это действие?
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" id="confirmCancel">Отмена</button>
+                <button class="btn btn-danger" id="confirmOk">Подтвердить</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="messageModal">
+        <div class="modal-content">
+            <button class="close-modal">&times;</button>
+            <div class="modal-header">
+                <h2><i class="fas fa-info-circle"></i> Сообщение</h2>
+            </div>
+            <div class="modal-body" id="messageContent">
+                <!-- Заполняется через JS -->
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-primary" id="messageOk">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Скрипты -->
+    <script src="/static/js/main.js"></script>
+</body>
+</html>
